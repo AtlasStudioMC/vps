@@ -12,8 +12,8 @@ const { FILEBASE_KEY, FILEBASE_SECRET, FILEBASE_BUCKET } = process.env;
 const enabled = !!(FILEBASE_KEY && FILEBASE_SECRET && FILEBASE_BUCKET);
 
 const s3 = enabled && new S3Client({
-  endpoint: "https://s3.filebase.com",
-  region: "us-east-1",
+  endpoint: process.env.FILEBASE_ENDPOINT || "https://s3.filebase.io",
+  region: "auto",
   forcePathStyle: true,
   credentials: { accessKeyId: FILEBASE_KEY, secretAccessKey: FILEBASE_SECRET },
 });
