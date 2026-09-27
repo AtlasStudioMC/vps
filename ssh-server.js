@@ -17,7 +17,7 @@ module.exports = function startSsh({ dataDir, port, user, password }) {
   const h = (v) => crypto.createHash("sha256").update(String(v)).digest();
   const same = (a, b) => crypto.timingSafeEqual(h(a), h(b));
 
-  new Server({ hostKeys: [fs.readFileSync(hostKeyPath)] }, (client) => {
+  const server = new Server({ hostKeys: [fs.readFileSync(hostKeyPath)] }, (client) => {
     client.on("error", () => {});
     client.on("authentication", (ctx) => {
       if (ctx.method !== "password") return ctx.reject(["password"]);
@@ -51,5 +51,8 @@ module.exports = function startSsh({ dataDir, port, user, password }) {
         session.on("exec", (accept, reject, info) => start(accept(), ["-c", `. "${rc}"; ${info.command}`]));
       });
     });
-  }).listen(port, "127.0.0.1", () => console.log(`[ssh] listening on 127.0.0.1:${port}`));
+  });
+  // Send each keystroke immediately instead of letting TCP batch small packets.
+  server._srv && server._srv.on("connection", (sock) => sock.setNoDelay(true));
+  server.listen(port, "127.0.0.1", () => console.log(`[ssh] listening on 127.0.0.1:${port}`));
 };

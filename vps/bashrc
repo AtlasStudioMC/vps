@@ -7,6 +7,10 @@ alias ll='ls -alF' la='ls -A' l='ls -CF' cls=clear
 [ -f "$VPS_HOME/.bashrc" ] && . "$VPS_HOME/.bashrc"   # your own saved customizations
 if [ -z "$VPS_MOTD_SHOWN" ] && [[ $- == *i* ]]; then
   export VPS_MOTD_SHOWN=1
-  command -v neofetch >/dev/null && neofetch
+  # neofetch is slow (~1-2s), so only show it on the first login of the day
+  stamp="$VPS_HOME/.vps/motd-day"
+  if [ "$(cat "$stamp" 2>/dev/null)" != "$(date +%F)" ]; then
+    date +%F > "$stamp"; command -v neofetch >/dev/null && neofetch
+  fi
   echo "Files in ~/data are saved to Filebase. Use 'apt install <pkg>' to add software."
 fi
