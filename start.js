@@ -50,6 +50,20 @@ async function keepAlive() {
   }
 }
 
+// playit.gg: free tunnel with servers worldwide (much lower lag than bore.pub).
+// Needs a PLAYIT_SECRET secret; the TCP tunnel -> 127.0.0.1:2222 is set up on playit.gg.
+function startPlayit() {
+  const bin = path.join(os.homedir(), "bin", "playit");
+  if (!fs.existsSync(bin)) {
+    fs.mkdirSync(path.dirname(bin), { recursive: true });
+    execSync(`curl -sL -o ${bin} https://github.com/playit-cloud/playit-agent/releases/download/v1.0.10/playit-linux-amd64 && chmod +x ${bin}`);
+  }
+  const p = spawn(bin, ["--secret", process.env.PLAYIT_SECRET]);
+  p.stdout.on("data", (d) => process.stdout.write("[playit] " + d));
+  p.stderr.on("data", (d) => process.stdout.write("[playit] " + d));
+  p.on("exit", () => setTimeout(startPlayit, 5000));
+}
+
 (async () => {
   await storage.restore();
   process.env.VPS_HOME = storage.DATA_DIR;
@@ -63,6 +77,7 @@ async function keepAlive() {
       dataDir: storage.DATA_DIR, port: SSH_PORT, user: SSH_USER, password: process.env.SSH_PASSWORD,
     });
     startTunnel();
+    if (process.env.PLAYIT_SECRET) startPlayit();
   } else {
     console.log("[ssh] Set SSH_PASSWORD in Secrets to enable SSH.");
   }
