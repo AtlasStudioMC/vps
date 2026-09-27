@@ -1,0 +1,46 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free VPS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
+<style>
+ html,body{margin:0;height:100%;background:#0d1117;color:#e6edf3;font-family:system-ui,sans-serif}
+ #login{display:flex;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+ input,button{padding:10px 14px;font-size:16px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:inherit}
+ button{cursor:pointer;background:#238636}
+ #term{display:none;height:100%}
+ #err{color:#f85149;min-height:1em}
+</style></head>
+<body>
+<div id="login">
+  <h2>Free VPS</h2>
+  <input id="pw" type="password" placeholder="Password" autofocus>
+  <button id="go">Connect</button>
+  <div id="err"></div>
+</div>
+<div id="term"></div>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+async function login() {
+  const r = await fetch("/login", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("pw").value})});
+  const j = await r.json();
+  if (!r.ok) { $("err").textContent = j.error; return; }
+  start(j.token);
+}
+function start(token) {
+  $("login").style.display = "none"; $("term").style.display = "block";
+  const term = new Terminal({cursorBlink:true,fontSize:15,theme:{background:"#0d1117"}});
+  const fit = new FitAddon.FitAddon(); term.loadAddon(fit);
+  term.open($("term")); fit.fit();
+  const ws = new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/term?token="+token);
+  const size = () => ws.readyState===1 && ws.send("\x00resize:"+term.cols+","+term.rows);
+  ws.onopen = size;
+  ws.onmessage = (e) => term.write(e.data);
+  ws.onclose = () => term.write("\r\n[disconnected - refresh to reconnect]\r\n");
+  term.onData((d) => ws.readyState===1 && ws.send(d));
+  window.addEventListener("resize", () => { fit.fit(); size(); });
+}
+$("go").onclick = login;
+$("pw").onkeydown = (e) => e.key==="Enter" && login();
+</script></body></html>
