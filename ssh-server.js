@@ -13,6 +13,7 @@ module.exports = function startSsh({ dataDir, port, user, password }) {
     fs.writeFileSync(hostKeyPath, utils.generateKeyPairSync("ed25519").private, { mode: 0o600 });
   }
 
+  const rc = path.join(__dirname, "vps", "bashrc");
   const h = (v) => crypto.createHash("sha256").update(String(v)).digest();
   const same = (a, b) => crypto.timingSafeEqual(h(a), h(b));
 
@@ -46,8 +47,8 @@ module.exports = function startSsh({ dataDir, port, user, password }) {
           term && term.resize(info.cols, info.rows);
           accept && accept();
         });
-        session.on("shell", (accept) => start(accept(), ["-l"]));
-        session.on("exec", (accept, reject, info) => start(accept(), ["-lc", info.command]));
+        session.on("shell", (accept) => start(accept(), ["--rcfile", rc, "-i"]));
+        session.on("exec", (accept, reject, info) => start(accept(), ["-c", `. "${rc}"; ${info.command}`]));
       });
     });
   }).listen(port, "127.0.0.1", () => console.log(`[ssh] listening on 127.0.0.1:${port}`));

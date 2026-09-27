@@ -43,7 +43,7 @@ wss.on("connection", (ws, req) => {
   const token = new URL(req.url, "http://x").searchParams.get("token");
   if (!tokens.has(token)) return ws.close(1008, "unauthorized");
 
-  const shell = pty.spawn("bash", [], {
+  const shell = pty.spawn("bash", ["--rcfile", path.join(__dirname, "vps", "bashrc"), "-i"], {
     name: "xterm-256color", cols: 80, rows: 24,
     cwd: process.env.VPS_HOME || process.env.HOME || process.cwd(), env: process.env,
   });

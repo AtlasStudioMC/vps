@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Replit has no root; run the command as the current user so "sudo x" just works.
+[ "$1" = "-i" ] || [ "$1" = "-s" ] || [ "$1" = "su" ] && exec bash -l
+while [[ "$1" == -* ]]; do shift; done
+[ $# -eq 0 ] && { echo "usage: sudo <command>"; exit 1; }
+exec "$@"

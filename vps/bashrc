@@ -1,0 +1,12 @@
+# Login environment for the VPS shells (web terminal + SSH).
+[ -f /etc/bashrc ] && . /etc/bashrc
+export VPS_HOME="${VPS_HOME:-$HOME/data}"
+export PATH="$VPS_HOME/bin:$(dirname "${BASH_SOURCE[0]}")/bin:$HOME/.nix-profile/bin:$PATH"
+PS1='\[\e[1;32m\]\u@vps\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ '
+alias ll='ls -alF' la='ls -A' l='ls -CF' cls=clear
+[ -f "$VPS_HOME/.bashrc" ] && . "$VPS_HOME/.bashrc"   # your own saved customizations
+if [ -z "$VPS_MOTD_SHOWN" ] && [[ $- == *i* ]]; then
+  export VPS_MOTD_SHOWN=1
+  command -v neofetch >/dev/null && neofetch
+  echo "Files in ~/data are saved to Filebase. Use 'apt install <pkg>' to add software."
+fi

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# apt-style front end for Nix. Installed packages are listed in ~/data/.vps/packages
+# and reinstalled automatically after a republish.
+LIST="${VPS_HOME:-$HOME/data}/.vps/packages"
+mkdir -p "$(dirname "$LIST")"; touch "$LIST"
+cmd="$1"; shift
+pkgs=(); for a in "$@"; do [[ "$a" == -* ]] || pkgs+=("$a"); done
+case "$cmd" in
+  install)
+    for p in "${pkgs[@]}"; do
+      echo "Installing $p..."
+      if nix-env -iA "nixpkgs.$p" >/dev/null 2>&1; then
+        grep -qxF "$p" "$LIST" || echo "$p" >> "$LIST"; echo "  ✓ $p installed"
+      else echo "  ✗ $p not found (search names at https://search.nixos.org/packages)"; fi
+    done ;;
+  remove|purge|uninstall)
+    for p in "${pkgs[@]}"; do
+      nix-env -e "$p" >/dev/null 2>&1; sed -i "/^$p\$/d" "$LIST"; echo "  ✓ $p removed"
+    done ;;
+  list) echo "Installed packages:"; cat "$LIST" ;;
+  search) echo "Search at: https://search.nixos.org/packages?query=${pkgs[0]}" ;;
+  update|upgrade) echo "All packages are up to date." ;;
+  *) echo "usage: apt {install|remove|list|search|update|upgrade} <pkg>..." ;;
+esac

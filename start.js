@@ -39,6 +39,8 @@ function startTunnel() {
 (async () => {
   await storage.restore();
   process.env.VPS_HOME = storage.DATA_DIR;
+  // neofetch + reinstall packages saved by `apt install` (background, doesn't delay startup)
+  spawn("bash", [path.join(__dirname, "vps", "boot.sh")], { stdio: "inherit" });
 
   require("./server"); // web terminal
 
