@@ -2,11 +2,15 @@
   "name": "replit-vps",
   "version": "1.0.0",
   "description": "Web-based terminal that turns a Replit into a free VPS-like shell",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
+  "main": "start.js",
+  "scripts": {
+    "start": "node start.js"
+  },
   "dependencies": {
     "express": "^4.19.2",
     "node-pty": "^1.0.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "ssh2": "^1.16.0",
+    "@aws-sdk/client-s3": "^3.600.0"
   }
 }

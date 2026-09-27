@@ -45,7 +45,7 @@ wss.on("connection", (ws, req) => {
 
   const shell = pty.spawn("bash", [], {
     name: "xterm-256color", cols: 80, rows: 24,
-    cwd: process.env.HOME || process.cwd(), env: process.env,
+    cwd: process.env.VPS_HOME || process.env.HOME || process.cwd(), env: process.env,
   });
   shell.onData((d) => ws.readyState === 1 && ws.send(d));
   shell.onExit(() => ws.close());
