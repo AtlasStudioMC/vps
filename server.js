@@ -36,6 +36,13 @@ app.post("/login", (req, res) => {
   res.status(401).json({ error: "Wrong password" });
 });
 
+// Autoscale only gives full CPU while a request is in flight; start.js holds this one open.
+app.get("/keepalive", (req, res) => {
+  res.setHeader("Content-Type", "text/plain");
+  const t = setInterval(() => res.write("."), 20000);
+  req.on("close", () => clearInterval(t));
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/term" });
 

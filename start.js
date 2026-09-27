@@ -36,6 +36,20 @@ function startTunnel() {
   p.on("exit", () => setTimeout(startTunnel, 5000)); // reconnect if bore drops
 }
 
+// When published on Autoscale, keep a request to ourselves open so the instance stays
+// awake with full CPU. Disable with KEEPALIVE=0.
+async function keepAlive() {
+  const domain = (process.env.REPLIT_DOMAINS || "").split(",")[0];
+  if (!process.env.REPLIT_DEPLOYMENT || !domain || process.env.KEEPALIVE === "0") return;
+  for (;;) {
+    try {
+      const r = await fetch(`https://${domain}/keepalive`);
+      for await (const _ of r.body) {} // holds until the platform closes it
+    } catch {}
+    await new Promise((ok) => setTimeout(ok, 2000));
+  }
+}
+
 (async () => {
   await storage.restore();
   process.env.VPS_HOME = storage.DATA_DIR;
@@ -53,6 +67,7 @@ function startTunnel() {
     console.log("[ssh] Set SSH_PASSWORD in Secrets to enable SSH.");
   }
 
+  keepAlive();
   setInterval(storage.backup, BACKUP_MINUTES * 60000);
   let stopping = false;
   const shutdown = async () => {
