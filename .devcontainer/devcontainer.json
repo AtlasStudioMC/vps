@@ -1,0 +1,6 @@
+{
+  "name": "vps",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "postStartCommand": "bash .devcontainer/ssh.sh"
+}
