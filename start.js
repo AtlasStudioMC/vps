@@ -64,6 +64,35 @@ function startPlayit() {
   p.on("exit", () => setTimeout(startPlayit, 5000));
 }
 
+// Tailscale (userspace, no root): Termius on a device in the same tailnet connects to
+// this machine's 100.x address, directly or via a nearby relay - far less lag than bore.
+// Needs a TS_AUTHKEY secret. Incoming tailnet connections are forwarded to 127.0.0.1.
+function startTailscale() {
+  const dir = path.join(os.homedir(), "tailscale");
+  const ts = path.join(dir, "tailscale"), tsd = path.join(dir, "tailscaled");
+  if (!fs.existsSync(tsd)) {
+    fs.mkdirSync(dir, { recursive: true });
+    execSync(
+      `curl -sL https://pkgs.tailscale.com/stable/$(curl -s 'https://pkgs.tailscale.com/stable/?mode=json' | grep -o 'tailscale_[0-9.]*_amd64.tgz' | head -1) | tar -xz --strip-components=1 -C ${dir}`
+    );
+  }
+  const state = path.join(storage.DATA_DIR, ".vps", "tailscale"); // backed up -> same address after republish
+  const sock = path.join(os.tmpdir(), "tailscaled.sock");
+  fs.mkdirSync(state, { recursive: true });
+  const d = spawn(tsd, ["--tun=userspace-networking", `--statedir=${state}`, `--socket=${sock}`]);
+  d.stderr.on("data", () => {});
+  d.on("exit", () => setTimeout(startTailscale, 5000));
+  setTimeout(() => {
+    try {
+      execSync(`${ts} --socket=${sock} up --authkey=${process.env.TS_AUTHKEY} --hostname=replit-vps`, { stdio: "ignore" });
+      const ip = execSync(`${ts} --socket=${sock} ip -4`).toString().trim();
+      console.log(`\n[tailscale] Termius -> Host: ${ip} (or replit-vps)  Port: ${SSH_PORT}  User: ${SSH_USER}\n`);
+    } catch (e) {
+      console.error("[tailscale] up failed:", e.message);
+    }
+  }, 3000);
+}
+
 (async () => {
   await storage.restore();
   process.env.VPS_HOME = storage.DATA_DIR;
@@ -78,6 +107,7 @@ function startPlayit() {
     });
     startTunnel();
     if (process.env.PLAYIT_SECRET) startPlayit();
+    if (process.env.TS_AUTHKEY) startTailscale();
   } else {
     console.log("[ssh] Set SSH_PASSWORD in Secrets to enable SSH.");
   }
