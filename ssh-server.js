@@ -1,7 +1,9 @@
-// Minimal SSH server (no root needed). Key-only auth from ~/.ssh/authorized_keys.
+// Minimal SSH server (no root needed). Auth: keys in ~/.ssh/authorized_keys and/or
+// the password stored in ~/.ssh/vps_password (set by ssh-tunnel.sh).
 const { Server, utils } = require("ssh2");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const pty = require("node-pty");
 
 const HOME = process.env.HOME;
@@ -10,6 +12,15 @@ const hostKeyPath = path.join(HOME, ".ssh", "vps_host_ed25519");
 fs.mkdirSync(path.dirname(hostKeyPath), { recursive: true, mode: 0o700 });
 if (!fs.existsSync(hostKeyPath)) {
   fs.writeFileSync(hostKeyPath, utils.generateKeyPairSync("ed25519").private, { mode: 0o600 });
+}
+
+const passwordPath = path.join(HOME, ".ssh", "vps_password");
+function passwordOk(given) {
+  let real;
+  try { real = fs.readFileSync(passwordPath, "utf8").trim(); } catch { return false; }
+  if (!real) return false;
+  const h = (v) => crypto.createHash("sha256").update(String(v)).digest();
+  return crypto.timingSafeEqual(h(given), h(real));
 }
 
 function allowedKeys() {
@@ -23,7 +34,8 @@ function allowedKeys() {
 new Server({ hostKeys: [fs.readFileSync(hostKeyPath)] }, (client) => {
   client.on("error", () => {});
   client.on("authentication", (ctx) => {
-    if (ctx.method !== "publickey") return ctx.reject(["publickey"]);
+    if (ctx.method === "password") return passwordOk(ctx.password) ? ctx.accept() : ctx.reject();
+    if (ctx.method !== "publickey") return ctx.reject(["password", "publickey"]);
     const key = allowedKeys().find((k) => k.getPublicSSH().equals(ctx.key.data));
     if (!key) return ctx.reject();
     if (ctx.signature && key.verify(ctx.blob, ctx.signature, ctx.hashAlgo) !== true) return ctx.reject();
