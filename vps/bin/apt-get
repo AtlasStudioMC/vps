@@ -22,3 +22,4 @@ case "$cmd" in
   update|upgrade) echo "All packages are up to date." ;;
   *) echo "usage: apt {install|remove|list|search|update|upgrade} <pkg>..." ;;
 esac
+"$(dirname "$0")/vps-wrap"

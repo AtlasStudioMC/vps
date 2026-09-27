@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Nix binaries segfault under Replit's LD_AUDIT loader; give each one a launcher without it.
+W="${VPS_HOME:-$HOME/data}/.vps/nixbin"
+rm -rf "$W"; mkdir -p "$W"
+for f in "$HOME"/.nix-profile/bin/*; do
+  [ -e "$f" ] || continue
+  printf '#!/bin/sh\nexec env -u LD_AUDIT "%s" "$@"\n' "$f" > "$W/$(basename "$f")"
+done
+chmod +x "$W"/* 2>/dev/null; true

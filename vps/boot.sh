@@ -3,4 +3,5 @@
 D="${VPS_HOME:-$HOME/data}"; mkdir -p "$D/bin" "$D/.vps"
 [ -x "$D/bin/neofetch" ] || { curl -sL https://raw.githubusercontent.com/dylanaraps/neofetch/master/neofetch -o "$D/bin/neofetch" && chmod +x "$D/bin/neofetch"; }
 [ -s "$D/.vps/packages" ] && while read -r p; do [ -n "$p" ] && nix-env -iA "nixpkgs.$p" >/dev/null 2>&1; done < "$D/.vps/packages"
+"$(dirname "$0")/bin/vps-wrap"
 echo "[vps] packages ready"
