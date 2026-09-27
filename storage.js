@@ -1,6 +1,6 @@
 // Persists DATA_DIR to a Filebase (S3-compatible) bucket as one tar.gz so it survives republishes.
 // Needs secrets: FILEBASE_KEY, FILEBASE_SECRET, FILEBASE_BUCKET.
-const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, GetObjectCommand, PutObjectCommand, CreateBucketCommand } = require("@aws-sdk/client-s3");
 const { execFileSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -30,6 +30,10 @@ async function restore() {
     console.log(`[storage] Restored ${DATA_DIR} from Filebase`);
   } catch (e) {
     if (e.name === "NoSuchKey") console.log("[storage] No backup yet - starting fresh.");
+    else if (e.name === "NoSuchBucket") {
+      await s3.send(new CreateBucketCommand({ Bucket: FILEBASE_BUCKET }));
+      console.log(`[storage] Created bucket ${FILEBASE_BUCKET} - starting fresh.`);
+    }
     else console.error("[storage] Restore failed:", e.message);
   }
 }
