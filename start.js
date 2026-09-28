@@ -76,10 +76,11 @@ function startTailscale() {
       `curl -sL https://pkgs.tailscale.com/stable/$(curl -s 'https://pkgs.tailscale.com/stable/?mode=json' | grep -o 'tailscale_[0-9.]*_amd64.tgz' | head -1) | tar -xz --strip-components=1 -C ${dir}`
     );
   }
-  const state = path.join(storage.DATA_DIR, ".vps", "tailscale"); // backed up -> same address after republish
+  // In-memory state: Autoscale can run old and new instances side by side, and a shared
+  // (backed-up) node key makes them fight ("Duplicate node key"). Use an ephemeral auth key
+  // so offline instances are removed and the name "replit-vps" stays free.
   const sock = path.join(os.tmpdir(), "tailscaled.sock");
-  fs.mkdirSync(state, { recursive: true });
-  const d = spawn(tsd, ["--tun=userspace-networking", `--statedir=${state}`, `--socket=${sock}`]);
+  const d = spawn(tsd, ["--tun=userspace-networking", "--state=mem:", `--socket=${sock}`]);
   d.stderr.on("data", () => {});
   d.on("exit", () => setTimeout(startTailscale, 5000));
   setTimeout(() => {
